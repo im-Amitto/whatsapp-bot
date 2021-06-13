@@ -1,20 +1,14 @@
-
 const {
     decryptMedia
 } = require('@open-wa/wa-decrypt')
-var FormData = require('form-data');
 const axios = require("axios");
 const fs = require('fs-extra')
 const moment = require('moment-timezone')
 const {
     waifuR
 } = require('waifur')
-const get = require('got')
-const fetch = require('node-fetch')
 const color = require('./lib/color')
-const PDFMerger = require('pdf-merger-js');
 const {
-    spawn,
     exec
 } = require('child_process')
 const nhentai = require('nhentai-js')
@@ -26,36 +20,24 @@ const {
     liriklagu,
     quotemaker,
     randomNimek,
-    fb,
-    sleep,
-    jadwalTv,
-    ss
+    fb
 } = require('./lib/functions')
 const {
     help,
     readme,
     langCode,
-    listChannel,
     youtube_parser,
-    getFileSize
+    getFileSize,
+    getlangCodes
 } = require('./lib/help')
-const {
-    stdout
-} = require('process')
+
 const nsfw_ = JSON.parse(fs.readFileSync('./lib/NSFW.json'))
 const restrictMembers_ = JSON.parse(fs.readFileSync('./lib/restrictMembers.json'))
 const welkom = JSON.parse(fs.readFileSync('./lib/welcome.json'))
-const {
-    RemoveBgResult,
-    removeBackgroundFromImageBase64,
-    removeBackgroundFromImageFile
-} = require('remove.bg')
-const imagesToPdf = require("images-to-pdf")
 var Downloader = require("./lib/downloader");
 var dl = new Downloader();
 const ytdl = require('ytdl-core');
 const sharp = require('sharp');
-
 
 moment.tz.setDefault('Asia/Jakarta').locale('id')
 
@@ -120,12 +102,12 @@ module.exports = msgHandler = async (client, message) => {
         const botNumber = await client.getHostNumber()
         const blockNumber = await client.getBlockedIds()
         const groupId = isGroupMsg ? chat.groupMetadata.id : ''
-        const ownerNumber = ["+9195xxxxx", "9195xxxxx@c.us", "9195xxxxx"] // replace with your whatsapp number
+        const ownerNumber = ["+9195xxxxxx", "9195xxxxxx@c.us", "9195xxxxxx"] // replace with your whatsapp number
         const isOwner = ownerNumber.includes(sender.id)
         const groupAdmins = isGroupMsg ? await client.getGroupAdmins(groupId) : ''
         const isGroupAdmins = isOwner ? true : isGroupMsg ? groupAdmins.includes(sender.id) : false
         const isBotGroupAdmins = isGroupMsg ? groupAdmins.includes(botNumber + '@c.us') : false
-        
+
 
         const isBlocked = blockNumber.includes(sender.id)
         const isNsfw = isOwner ? true : isGroupMsg ? nsfw_.includes(chat.id) : true
@@ -181,6 +163,13 @@ module.exports = msgHandler = async (client, message) => {
                     .catch(function (error) {
                         console.log(error);
                     });
+                break
+            case '!fb':
+                if (args.length === 1) return client.reply(from, 'Send order *!fb [linkFb]*', id)
+                if (!(args[1].includes('facebook.com') || args[1].includes('fb.watch'))) return client.reply(from, mess.error.Iv, id)
+                client.reply(from, mess.wait, id)
+                const resp = await fb(args[1]);
+                client.sendFileFromUrl(from, resp.url, `${resp.capt}${resp.exts}`, resp.capt, id)
                 break
             case '!sticker':
             case '!stiker':
@@ -294,109 +283,7 @@ module.exports = msgHandler = async (client, message) => {
                 }
                 break
             case '!tts':
-                var langcodes = ['af',
-                    'sq',
-                    'am',
-                    'ar',
-                    'hy',
-                    'az',
-                    'eu',
-                    'be',
-                    'bn',
-                    'bs',
-                    'bg',
-                    'ca',
-                    'ceb',
-                    'ny',
-                    'zh-CN',
-                    'zh-TW',
-                    'co',
-                    'hr',
-                    'cs',
-                    'da',
-                    'nl',
-                    'en',
-                    'eo',
-                    'et',
-                    'tl',
-                    'fi',
-                    'fr',
-                    'fy',
-                    'gl',
-                    'ka',
-                    'de',
-                    'el',
-                    'gu',
-                    'ht',
-                    'haw',
-                    'iw',
-                    'hi',
-                    'hmn',
-                    'hu',
-                    'is',
-                    'ig',
-                    'id',
-                    'ga',
-                    'it',
-                    'ja',
-                    'jw',
-                    'kn',
-                    'kk',
-                    'km',
-                    'ko',
-                    'ku',
-                    'ky',
-                    'lo',
-                    'la',
-                    'lv',
-                    'lt',
-                    'lb',
-                    'mk',
-                    'mg',
-                    'ms',
-                    'ml',
-                    'mt',
-                    'mi',
-                    'mn',
-                    'my',
-                    'ne',
-                    'no',
-                    'ps',
-                    'fa',
-                    'pl',
-                    'pt',
-                    'pa',
-                    'ro',
-                    'ru',
-                    'sm',
-                    'gd',
-                    'sr',
-                    'st',
-                    'sn',
-                    'sd',
-                    'si',
-                    'sk',
-                    'sl',
-                    'so',
-                    'es',
-                    'su',
-                    'sw',
-                    'sv',
-                    'tg',
-                    'ta',
-                    'te',
-                    'th',
-                    'tr',
-                    'uk',
-                    'ur',
-                    'uz',
-                    'vi',
-                    'cy',
-                    'xh',
-                    'yi',
-                    'yo',
-                    'zu'
-                ];
+                var langcodes = getlangCodes();
                 if (args.length === 1) return client.reply(from, 'Use *!tts [lang] [text]*, e.g. *!tts hi Good Morning*', id)
                 var dataBhs = body.split("!tts")[1].trim().split(" ")[0];
                 var dataText = body.slice(8)
@@ -667,18 +554,17 @@ module.exports = msgHandler = async (client, message) => {
                 break
             case '!quotemaker':
                 arg = body.trim().split('?')
-                if (arg.length >= 4) {
+                if (arg.length >= 3) {
                     client.reply(from, mess.wait, id)
                     const quotes = encodeURIComponent(arg[1])
                     const author = encodeURIComponent(arg[2])
-                    const theme = encodeURIComponent(arg[3])
-                    await quotemaker(quotes, author, theme).then(amsu => {
+                    await quotemaker(quotes, author, "random").then(amsu => {
                         client.sendFile(from, amsu, 'quotesmaker.jpg', 'yeh...').catch(() => {
                             client.reply(from, mess.error.Qm, id)
                         })
                     })
                 } else {
-                    client.reply(from, 'Usage: \n!quotemaker |text|watermark|theme\n\nEx :\n!quotemaker ?people dies?amit?random', id)
+                    client.reply(from, 'Usage: \n!quotemaker ?text?watermark\n\nEx :\n!quotemaker ?bot life matters?bot', id)
                 }
                 break
             case '!linkgroup':
@@ -805,6 +691,24 @@ module.exports = msgHandler = async (client, message) => {
                 if (!groupAdmins.includes(mentionedJidList[0])) return client.reply(from, 'Sorry, that user is not an admin.', id)
                 await client.demoteParticipant(groupId, mentionedJidList[0])
                 await client.sendTextWithMentions(from, `Accepted, demote @${mentionedJidList[0]}.`)
+                break
+            case '!join':
+                if (args.length < 2) return client.reply(from, 'Send command *!join linkgroup key*\n\nEx:\n!join https://chat.whatsapp.com/blablablablablabla', id)
+                const link = args[1]
+                // Use it to limite max group
+                // const tGr = await client.getAllGroups()
+                // Use it to restrict minimum user needed
+                // const minMem = 30
+                const isLink = link.match(/(https:\/\/chat.whatsapp.com)/gi)
+                const check = await client.inviteInfo(link)
+                if (!isLink) return client.reply(from, 'Is this a link? 👊🤬', id)
+                // if (tGr.length > 15) return client.reply(from, 'Sorry, the number of groups is maxed out!', id)
+                // if (check.size < minMem) return client.reply(from, 'Group members do not exceed 30, bots cannot enter', id) 
+                if (check.status === 200) {
+                    await client.joinGroupViaLink(link).then(() => client.reply(from, 'The boat will enter soon!', id))
+                } else {
+                    client.reply(from, 'Invalid group link!', id)
+                }
                 break
             case '!delete':
 
