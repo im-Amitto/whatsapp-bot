@@ -823,9 +823,13 @@ module.exports = msgHandler = async (client, message) => {
                     fs.unlink(dvafile);
                 });
                 break
-            case '!randomhug':
+            case '!hug':
+                if (!isGroupMsg) return client.reply(from, 'This feature can only be used in groups', id)
+                if (mentionedJidList.length === 0) return client.reply(from, 'To use this feature, send a command *!hug* @tagmember', id)
+                if (mentionedJidList.length >= 2) return client.reply(from, 'Sorry, this command can only be used for 1 user.', id)
                 const hugfile = await randomNimek('hug')
-                client.sendFile(from, hugfile, 'thumbnail.jpg', 'Enjoy!!', id).then(t => {
+                client.sendFile(from, hugfile, 'thumbnail.jpg', 'A hug to you ', id).then(t => {
+                    client.sendTextWithMentions(from, `@${mentionedJidList[0]}`)
                     fs.unlink(hugfile);
                 });
                 break
