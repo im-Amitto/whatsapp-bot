@@ -121,7 +121,56 @@ module.exports = msgHandler = async (client, message) => {
         if (isBlocked) return
         //if (!isOwner) return
         if (command.startsWith('!') && isMemberRestricted && !isGroupAdmins && isGroupMsg) return client.reply(from, 'Members are restricted from using the bot', id)
+        var getConfig = {
+            method: 'get',
+            url: '',
+            headers: {
+                'Connection': 'keep-alive',
+                'Cache-Control': 'max-age=0',
+                'sec-ch-ua': '" Not;A Brand";v="99", "Google Chrome";v="91", "Chromium";v="91"',
+                'sec-ch-ua-mobile': '?0',
+                'Upgrade-Insecure-Requests': '1',
+                'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.101 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+                'Sec-Fetch-Site': 'cross-site',
+                'Sec-Fetch-Mode': 'navigate',
+                'Sec-Fetch-User': '?1',
+                'Sec-Fetch-Dest': 'document',
+                'Accept-Language': 'en-US,en;q=0.9'
+            }
+        };
         switch (command) {
+            case '!yomomma':
+                if (!isGroupMsg) return client.reply(from, 'This feature can only be used in groups', id)
+                if (mentionedJidList.length === 0) return client.reply(from, 'To use this feature, send a command *!yomomma* @tagmember', id)
+                if (mentionedJidList.length >= 2) return client.reply(from, 'Sorry, this command can only be used for 1 user.', id)
+                getConfig.url = 'https://api.yomomma.info/';
+                axios(getConfig)
+                    .then(function (response) {
+                        const yomomma = response.data["joke"];
+                        client.sendTextWithMentions(from, `@${mentionedJidList[0]} ${yomomma}`)
+                    })
+                    .catch(function (error) {
+                        console.log(error);
+                    });
+
+                break
+            case '!roast':
+                if (!isGroupMsg) return client.reply(from, 'This feature can only be used in groups', id)
+                if (mentionedJidList.length === 0) return client.reply(from, 'To use this feature, send a command *!roast* @tagmember', id)
+                if (mentionedJidList.length >= 2) return client.reply(from, 'Sorry, this command can only be used for 1 user.', id)
+                getConfig.url = 'https://evilinsult.com/generate_insult.php?lang=en&type=json';
+                getConfig.headers["sec-fetch-site"] = "none";
+                getConfig.headers["authority"] = "evilinsult.com";
+                axios(getConfig)
+                    .then(function (response) {
+                        const roast = response.data["insult"];
+                        client.sendTextWithMentions(from, `@${mentionedJidList[0]} ${roast}`)
+                    })
+                    .catch(function (error) {
+                        console.log(error);
+                    });
+                break
             case '!listmeme':
                 var config = {
                     method: 'get',
