@@ -102,7 +102,7 @@ module.exports = msgHandler = async (client, message) => {
         const botNumber = await client.getHostNumber()
         const blockNumber = await client.getBlockedIds()
         const groupId = isGroupMsg ? chat.groupMetadata.id : ''
-        const ownerNumber = ["+9195xxxxxx", "9195xxxxxx@c.us", "9195xxxxxx"] // replace with your whatsapp number
+        const ownerNumber = ["+9195xxxxxxx", "9195xxxxxxx@c.us", "9195xxxxxxx"] // replace with your whatsapp number
         const isOwner = ownerNumber.includes(sender.id)
         const groupAdmins = isGroupMsg ? await client.getGroupAdmins(groupId) : ''
         const isGroupAdmins = isOwner ? true : isGroupMsg ? groupAdmins.includes(sender.id) : false
@@ -173,65 +173,34 @@ module.exports = msgHandler = async (client, message) => {
                 break
             case '!sticker':
             case '!stiker':
+                async function processImage(bufferImage, type) {
+                    const mediaData = await decryptMedia(bufferImage, uaOverride)
+                    const image = sharp(mediaData);
+                    let paddingLR, paddingTB;
+                    let metadata = await image.metadata();
+                    paddingLR = metadata.height > metadata.width ? Math.round((metadata.height - metadata.width) / 2) : 0;
+                    paddingTB = metadata.height < metadata.width ? Math.round((metadata.width - metadata.height) / 2) : 0;
+                    let paddedImage = await image
+                        .extend({
+                            top: paddingTB,
+                            bottom: paddingTB,
+                            left: paddingLR,
+                            right: paddingLR,
+                            background: {
+                                r: 0,
+                                g: 0,
+                                b: 0,
+                                alpha: 0
+                            }
+                        }).png()
+                        .toBuffer();
+                    const imageBase64 = `data:${type};base64,${paddedImage.toString('base64')}`
+                    await client.sendImageAsSticker(from, imageBase64)
+                }
                 if (isMedia && type === 'image') {
-                    const mediaData = await decryptMedia(message, uaOverride)
-                    const image = sharp(mediaData);
-                    let paddingLR, paddingTB;
-                    image
-                        .metadata()
-                        .then(function (metadata) {
-                            paddingLR = metadata.height > metadata.width ? Math.round((metadata.height - metadata.width) / 2) : 0;
-                            paddingTB = metadata.height < metadata.width ? Math.round((metadata.width - metadata.height) / 2) : 0;
-                            return image
-                                .extend({
-                                    top: paddingTB,
-                                    bottom: paddingTB,
-                                    left: paddingLR,
-                                    right: paddingLR,
-                                    background: {
-                                        r: 0,
-                                        g: 0,
-                                        b: 0,
-                                        alpha: 0
-                                    }
-                                }).png()
-                                .toBuffer();
-
-                        })
-                        .then(async function (data) {
-                            const imageBase64 = `data:${mimetype};base64,${data.toString('base64')}`
-                            await client.sendImageAsSticker(from, imageBase64)
-                        });
+                    await processImage(message, mimetype);
                 } else if (quotedMsg && quotedMsg.type == 'image') {
-                    const mediaData = await decryptMedia(quotedMsg, uaOverride)
-                    const image = sharp(mediaData);
-                    let paddingLR, paddingTB;
-                    image
-                        .metadata()
-                        .then(function (metadata) {
-                            paddingLR = metadata.height > metadata.width ? Math.round((metadata.height - metadata.width) / 2) : 0;
-                            paddingTB = metadata.height < metadata.width ? Math.round((metadata.width - metadata.height) / 2) : 0;
-                            return image
-                                .extend({
-                                    top: paddingTB,
-                                    bottom: paddingTB,
-                                    left: paddingLR,
-                                    right: paddingLR,
-                                    background: {
-                                        r: 0,
-                                        g: 0,
-                                        b: 0,
-                                        alpha: 0
-                                    }
-                                }).png()
-                                .toBuffer();
-
-                        })
-                        .then(async function (data) {
-                            const imageBase64 = `data:${quotedMsg.mimetype};base64,${data.toString('base64')}`
-                            await client.sendImageAsSticker(from, imageBase64)
-                        });
-
+                    await processImage(quotedMsg, quotedMsg.mimetype);
                 } else if (args.length === 2) {
                     const url = args[1]
                     if (url.match(isUrl)) {
@@ -249,70 +218,67 @@ module.exports = msgHandler = async (client, message) => {
             case '!stickergif':
             case '!stikergif':
             case '!sgif':
+                async function handleGif(media, type) {
+                    const mediaData = await decryptMedia(media, uaOverride)
+                    client.reply(from, mess.wait, id)
+                    let random = Math.floor(Math.random() * 10000) + 1;
+                    const filename = `./media/${random}.${type.split('/')[1]}`
+                    await fs.writeFileSync(filename, mediaData)
+                    await exec(`gify ${filename} ./media/${random}.gif --fps=30 --scale=120:120`, async function (error, stdout, stderr) {
+                        const gif = await fs.readFileSync(`./media/${random}.gif`, {
+                            encoding: "base64"
+                        })
+                        client.sendImageAsSticker(from, `data:image/gif;base64,${gif.toString('base64')}`).then(() => {
+                            fs.unlink(filename);
+                            fs.unlink(`./media/${random}.gif`);
+                        })
+                    })
+                }
                 if (isMedia) {
                     if (mimetype === 'video/mp4' && message.duration < 10 || mimetype === 'image/gif' && message.duration < 10) {
-                        const mediaData = await decryptMedia(message, uaOverride)
-                        client.reply(from, mess.wait, id)
-                        const filename = `./media/aswu.${mimetype.split('/')[1]}`
-                        await fs.writeFileSync(filename, mediaData)
-                        await exec(`gify ${filename} ./media/output.gif --fps=30 --scale=240:240`, async function (error, stdout, stderr) {
-                            const gif = await fs.readFileSync('./media/output.gif', {
-                                encoding: "base64"
-                            })
-                            await client.sendImageAsSticker(from, `data:image/gif;base64,${gif.toString('base64')}`)
-                        })
+                        handleGif(message, mimetype);
                     } else(
                         client.reply(from, 'Please select a video/gif less than 10 sec long', id)
                     )
                 } else if (quotedMsg && quotedMsg.isMedia) {
-                    console.log
                     if (quotedMsg.mimetype === 'video/mp4' && quotedMsg.duration < 10 || quotedMsg.mimetype === 'image/gif' && quotedMsg.duration < 10) {
-                        const mediaData = await decryptMedia(quotedMsg, uaOverride)
-                        client.reply(from, mess.wait, id)
-                        const filename = `./media/aswu.${quotedMsg.mimetype.split('/')[1]}`
-                        await fs.writeFileSync(filename, mediaData)
-                        await exec(`gify ${filename} ./media/output.gif --fps=30 --scale=240:240`, async function (error, stdout, stderr) {
-                            const gif = await fs.readFileSync('./media/output.gif', {
-                                encoding: "base64"
-                            })
-                            await client.sendImageAsSticker(from, `data:image/gif;base64,${gif.toString('base64')}`)
-                        })
+                        handleGif(quotedMsg, quotedMsg.mimetype);
                     } else(
                         client.reply(from, 'Please select a video/gif less than 10 sec long', id)
                     )
                 }
                 break
             case '!tts':
+                function serveAudio(text, lang) {
+                    const tts = require('node-gtts')(lang)
+                    let random = Math.floor(Math.random() * 10000) + 1;
+                    let loc = './media/tts/resHi' + random + '.mp3'
+                    tts.save(loc, text, function () {
+                        client.sendPtt(from, loc, id).then(() => {
+                            fs.unlink(loc);
+                        })
+                    })
+                }
                 var langcodes = getlangCodes();
                 if (args.length === 1) return client.reply(from, 'Use *!tts [lang] [text]*, e.g. *!tts hi Good Morning*', id)
                 var dataBhs = body.split("!tts")[1].trim().split(" ")[0];
-                var dataText = body.slice(8)
+                dataBhs = langcodes.includes(body.split("!tts")[1].trim().split(" ")[0]) ? dataBhs : false;
+                var dataText = dataBhs ? body.slice(8) : body.slice(5);
                 var fromLang = dataText.split(":")[1] != null ? dataText.split(":")[1].trim() : "";
                 if (dataText === '') return client.reply(from, 'Baka?', id)
                 if (dataText.length > 500) return client.reply(from, 'The text is too long!', id)
-                if (langcodes.includes(dataBhs)) {
+                if (dataBhs) {
                     translate(dataText.split(":")[0].trim(), {
                         from: fromLang == '' ? 'auto' : fromLang,
                         to: dataBhs
                     }).then(res => {
-                        const tts = require('node-gtts')(dataBhs)
-                        let random = Math.floor(Math.random() * 10000) + 1;
-                        let loc = './media/tts/resHi' + random + '.mp3'
-                        tts.save(loc, res.text, function () {
-                            client.sendPtt(from, loc, id)
-                        })
+                        serveAudio(res.text, dataBhs);
                     }).catch(err => {
                         console.log(err);
                         client.reply(from, 'Translation failed', id)
                     });
                 } else {
-                    dataText = body.slice(5);
-                    const tts = require('node-gtts')('en')
-                    let random = Math.floor(Math.random() * 10000) + 1;
-                    let loc = './media/tts/resHi' + random + '.mp3'
-                    tts.save(loc, dataText, function () {
-                        client.sendPtt(from, loc, id)
-                    })
+                    serveAudio(dataText, 'en');
                 }
                 break
             case '!ytmp3':
