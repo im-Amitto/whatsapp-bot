@@ -713,12 +713,14 @@ module.exports = msgHandler = async (client, message) => {
                 // Use it to limite max group
                 // const tGr = await client.getAllGroups()
                 // Use it to restrict minimum user needed
-                // const minMem = 30
+                const minMem = 10
                 const isLink = link.match(/(https:\/\/chat.whatsapp.com)/gi)
                 const check = await client.inviteInfo(link)
                 if (!isLink) return client.reply(from, 'Is this a link? 👊🤬', id)
-                // if (tGr.length > 15) return client.reply(from, 'Sorry, the number of groups is maxed out!', id)
-                // if (check.size < minMem) return client.reply(from, 'Group members do not exceed 30, bots cannot enter', id) 
+                // if (tGr.length > 10) return client.reply(from, 'Sorry, the number of groups is maxed out!', id)
+                if (!isOwner) {
+                    if (check.size < minMem) return client.reply(from, 'Group members do not exceed 30, bots cannot enter', id)
+                }
                 if (check.status === 200) {
                     await client.joinGroupViaLink(link).then(() => client.reply(from, 'The boat will enter soon!', id))
                 } else {

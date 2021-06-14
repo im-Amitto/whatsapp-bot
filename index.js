@@ -32,13 +32,12 @@ const start = async (client = new Client()) => {
     client.onAddedToGroup(((chat) => {
         let totalMem = chat.groupMetadata.participants.length
         // Minimum members needed to join group
-        // if (totalMem < 3) { 
-        // client.sendText(chat.id, `Group count is too low`).then(() => client.leaveGroup(chat.id)).then(() => client.deleteChat(chat.id))
-        // client.sendText(chat.id, `Hey, the members are only ${totalMem}, if you want to invite bots, the minimum number of member is 15`).then(() => client.leaveGroup(chat.id)).then(() => client.deleteChat(chat.id))
-        // } else {
+        if (totalMem < 10) { 
+        client.sendText(chat.id, `Hey, the members are only ${totalMem}, if you want to invite bots, the minimum number of member is 10`).then(() => client.leaveGroup(chat.id)).then(() => client.deleteChat(chat.id))
+        } else {
         client.sendText(chat.groupMetadata.id, `Hello group members *${chat.contact.name}* thank you for inviting this bot, to view the menu please send *!help*`)
         client.sendText(chat.groupMetadata.id, `Use *!leave* coammnd to kick out bot permanently`)
-        // }
+        }
     }))
 
     /*client.onAck((x => {
