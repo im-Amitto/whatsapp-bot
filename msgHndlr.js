@@ -118,6 +118,7 @@ module.exports = msgHandler = async (client, message) => {
         if (isGroupMsg && command.startsWith('!')) console.log('\x1b[1;31m~\x1b[1;37m>', '[\x1b[1;32mEXEC\x1b[1;37m]', time, color(msgs(command)), 'from', color(pushname), 'in', color(formattedTitle))
         //if (!isGroupMsg && !command.startsWith('!')) console.log('\x1b[1;33m~\x1b[1;37m>', '[\x1b[1;31mMSG\x1b[1;37m]', time, color(body), 'from', color(pushname))
         //if (isGroupMsg && !command.startsWith('!')) console.log('\x1b[1;33m~\x1b[1;37m>', '[\x1b[1;31mMSG\x1b[1;37m]', time, color(body), 'from', color(pushname), 'in', color(formattedTitle))
+        const gifQuality = 200;
         if (isBlocked) return
         //if (!isOwner) return
         if (command.startsWith('!') && isMemberRestricted && !isGroupAdmins && isGroupMsg) return client.reply(from, 'Members are restricted from using the bot', id)
@@ -273,7 +274,7 @@ module.exports = msgHandler = async (client, message) => {
                     let random = Math.floor(Math.random() * 10000) + 1;
                     const filename = `./media/${random}.${type.split('/')[1]}`
                     await fs.writeFileSync(filename, mediaData)
-                    await exec(`gify ${filename} ./media/${random}.gif --fps=30 --scale=120:120`, async function (error, stdout, stderr) {
+                    await exec(`gify ${filename} ./media/${random}.gif --fps=30 --scale=${gifQuality}:${gifQuality}`, async function (error, stdout, stderr) {
                         const gif = await fs.readFileSync(`./media/${random}.gif`, {
                             encoding: "base64"
                         })
